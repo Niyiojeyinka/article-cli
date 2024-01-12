@@ -14,12 +14,6 @@ class DevTo implements ArticleProviderInterface
         $this->baseUrl = config('services.devto.base_url');
     }
 
-    /**
-     * Fetch articles from the provider.
-     * @param int $limit
-     * @param bool $hasCommentsOnly
-     * @return array of articles [ success => true, data => ['title' => '...', 'publish_date' => '...', 'comments_count' => '...', 'author' => '...'], ... ]
-    */
     public function fetchArticles($limit = 5, $hasCommentsOnly = false): array
     {
         try{
