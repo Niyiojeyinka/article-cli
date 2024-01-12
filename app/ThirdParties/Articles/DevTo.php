@@ -4,6 +4,7 @@
 namespace App\ThirdParties\Articles;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class DevTo implements ArticleProviderInterface
 {
@@ -17,29 +18,44 @@ class DevTo implements ArticleProviderInterface
      * Fetch articles from the provider.
      * @param int $limit
      * @param bool $hasCommentsOnly
-     * @return array of articles [ ['title' => '...', 'publish_date' => '...', 'comments_count' => '...', 'author' => '...'], ... ]
+     * @return array of articles [ success => true, data => ['title' => '...', 'publish_date' => '...', 'comments_count' => '...', 'author' => '...'], ... ]
     */
     public function fetchArticles($limit = 5, $hasCommentsOnly = false): array
     {
-        $response = Http::timeout(self::TIMEOUT_IN_SECONDS)->get($this->baseUrl . '/articles', [
-            'per_page' => $limit,
-        ]);
+        try{
+            $response = Http::timeout(self::TIMEOUT_IN_SECONDS)->get($this->baseUrl . '/articles', [
+                'per_page' => $limit,
+            ]);
 
-        $articles = $response->json();
+            $articles = $response->json();
 
-        if ($hasCommentsOnly) {
-            $articles = array_filter($articles, function ($article) {
-                return $article['comments_count'] > 0;
-            });
-        }
+            if ($hasCommentsOnly) {
+                $articles = array_filter($articles, function ($article) {
+                    return $article['comments_count'] > 0;
+                });
+            }
 
-        return array_map(function ($article) {
+            $articles = array_map(function ($article) {
+               return [
+                    'title' => $article['title'],
+                    'publish_date' => $article['readable_publish_date'],
+                    'comments_count' => $article['comments_count'],
+                    'author' => $article['user']['username'],
+               ];
+            }, $articles);
+
             return [
-                'title' => $article['title'],
-                'publish_date' => $article['readable_publish_date'],
-                'comments_count' => $article['comments_count'],
-                'author' => $article['user']['username'],
+                'success' => true,
+                'data' => $articles,
             ];
-        }, $articles);
+        }catch(\Exception $e){
+            Log::error($e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => 'Something went wrong. Please try again later.',
+                'data' => [],
+            ];
+        }
     }
 }

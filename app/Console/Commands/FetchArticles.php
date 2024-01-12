@@ -31,11 +31,20 @@ class FetchArticles extends Command
     {
         $limit = $this->option('limit');
         $hasCommentsOnly = $this->option('has_comments_only');
-        $articleFetcher->setProvider($provider);
 
-        $articles = $articleFetcher->fetchArticles($limit, $hasCommentsOnly);
+        /**
+         * active provider is set in config/app.php/.env file, this is just an example
+         * can also be override on the fly by calling setProvider() method
+         * $articleFetcher->setProvider($provider);
+         **/
 
-        if (empty($articles)) {
+        $fetchResponse = $articleFetcher->fetchArticles($limit, $hasCommentsOnly);
+        if (!$fetchResponse['success']) {
+            $this->error($fetchResponse['message']);
+            return;
+        }
+
+        if (empty($articles = $fetchResponse['data'])){
             $this->info('No articles found.');
             return;
         }
